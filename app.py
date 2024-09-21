@@ -11,11 +11,15 @@ app.secret_key = "some_secret_key"
 db.init_app(app)
 
 BACKUP_FOLDER = "backup/"  # Folder to store backups
+tables_created = False  # Flag to prevent multiple table creations
 
 
 @app.before_request
-def create_tables():
-    db.create_all()
+def setup():
+    global tables_created
+    if not tables_created:
+        db.create_all()
+        tables_created = True
     if not os.path.exists(BACKUP_FOLDER):
         os.makedirs(BACKUP_FOLDER)  # Create backup folder if it doesn't exist
 
@@ -59,6 +63,19 @@ def add_expense():
 
         db.session.commit()
 
+    return redirect(url_for("index"))
+
+
+# Update expense route
+@app.route("/update_expense/<int:expense_id>", methods=["POST"])
+def update_expense(expense_id):
+    expense = Expense.query.get(expense_id)
+    if expense:
+        archive_expense(expense)  # Archive the old version before updating
+        expense.description = request.form["description"]
+        expense.amount = float(request.form["amount"])
+        expense.paid_by_id = request.form["paid_by"]
+        db.session.commit()
     return redirect(url_for("index"))
 
 
