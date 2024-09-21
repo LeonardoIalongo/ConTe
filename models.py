@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+import datetime
 
 db = SQLAlchemy()
 
@@ -21,6 +22,20 @@ class Expense(db.Model):
     description = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     paid_by_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    version = db.Column(db.Integer, default=1)  # Version tracking
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    deleted = db.Column(db.Boolean, default=False)  # Soft delete flag
     shared_with = db.relationship(
         "User", secondary=shared_expenses, backref="shared_expenses"
     )
+
+
+class ArchivedExpense(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    original_expense_id = db.Column(db.Integer)
+    description = db.Column(db.String(100), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    paid_by_id = db.Column(db.Integer)
+    version = db.Column(db.Integer)
+    archived_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
